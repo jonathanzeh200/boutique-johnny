@@ -36,14 +36,13 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
 
         // Global variables provided by the environment
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
-        let db, auth, storage;
+        let db, auth;
 
         // Function to initialize Firebase and authenticate
         async function initializeFirebase() {
@@ -51,7 +50,6 @@
                 const app = initializeApp(firebaseConfig);
                 db = getFirestore(app);
                 auth = getAuth(app);
-                storage = getStorage(app); // Initialize Firebase Storage
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
                 }
@@ -123,29 +121,15 @@
                 const category = document.getElementById('productCategory').value;
                 const price = parseInt(document.getElementById('productPrice').value);
                 const description = document.getElementById('productDescription').value;
-                const imageFile = document.getElementById('productImage').files[0];
+                const imageUrl = document.getElementById('productImageURL').value;
 
-                if (!name || !category || isNaN(price) || !description || !imageFile) {
-                    alert("Veuillez remplir tous les champs et sélectionner une image.");
+                if (!name || !category || isNaN(price) || !description || !imageUrl) {
+                    alert("Veuillez remplir tous les champs et fournir une URL d'image.");
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = 'Ajouter le produit';
                     return;
                 }
                 
-                let imageUrl = '';
-                try {
-                    const userId = auth.currentUser?.uid;
-                    const storageRef = ref(storage, `images/${userId}/${Date.now()}-${imageFile.name}`);
-                    const snapshot = await uploadBytes(storageRef, imageFile);
-                    imageUrl = await getDownloadURL(snapshot.ref);
-                } catch (e) {
-                    console.error("Error uploading image:", e);
-                    alert("Erreur lors de l'envoi de l'image.");
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Ajouter le produit';
-                    return;
-                }
-
                 const newProduct = {
                     name,
                     category,
@@ -169,23 +153,9 @@
                 logoSubmitBtn.disabled = true;
                 logoSubmitBtn.innerHTML = '<div class="spinner mx-auto"></div>';
 
-                const logoFile = document.getElementById('logoFile').files[0];
-                if (!logoFile) {
-                    alert("Veuillez sélectionner un fichier d'image pour le logo.");
-                    logoSubmitBtn.disabled = false;
-                    logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
-                    return;
-                }
-
-                let logoUrl = '';
-                try {
-                    const userId = auth.currentUser?.uid;
-                    const storageRef = ref(storage, `logos/${userId}/${Date.now()}-${logoFile.name}`);
-                    const snapshot = await uploadBytes(storageRef, logoFile);
-                    logoUrl = await getDownloadURL(snapshot.ref);
-                } catch (e) {
-                    console.error("Error uploading logo:", e);
-                    alert("Erreur lors de l'envoi du logo.");
+                const logoUrl = document.getElementById('logoUrl').value;
+                if (!logoUrl) {
+                    alert("Veuillez fournir une URL d'image pour le logo.");
                     logoSubmitBtn.disabled = false;
                     logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
                     return;
@@ -226,8 +196,8 @@
                 <input type="number" id="productPrice" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
             </div>
             <div>
-                <label for="productImage" class="block text-gray-700 font-medium mb-1">Photo du produit</label>
-                <input type="file" id="productImage" accept="image/*" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <label for="productImageURL" class="block text-gray-700 font-medium mb-1">URL de la photo du produit</label>
+                <input type="url" id="productImageURL" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ex: https://example.com/image.jpg">
             </div>
             <div>
                 <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-full hover:bg-indigo-700 transition-colors duration-300 btn-hover">
@@ -242,8 +212,8 @@
         <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Mettre à jour le logo du site</h1>
         <form id="logoForm" class="space-y-6">
             <div>
-                <label for="logoFile" class="block text-gray-700 font-medium mb-1">Sélectionner une image pour le logo</label>
-                <input type="file" id="logoFile" accept="image/*" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <label for="logoUrl" class="block text-gray-700 font-medium mb-1">URL de l'image pour le logo</label>
+                <input type="url" id="logoUrl" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ex: https://example.com/logo.png">
             </div>
             <div>
                 <button type="submit" id="logoSubmitBtn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-full hover:bg-indigo-700 transition-colors duration-300 btn-hover">
@@ -254,3 +224,4 @@
     </div>
 </body>
 </html>
+
