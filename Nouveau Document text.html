@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Johnny Électronique - Boutique en Ligne</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); }
+        }
+        /* Style for scrollbar in the cart menu */
+        #cart-menu::-webkit-scrollbar {
+            width: 8px;
+        }
+        #cart-menu::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 4px;
+        }
+        #cart-menu::-webkit-scrollbar-track {
+            background-color: #f1f5f9;
+        }
+        /* Custom hover effect for buttons */
+        .btn-hover:hover {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transform: translateY(-2px);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Header & Navigation -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center">
+            <a href="#" class="text-3xl font-bold text-gray-800">Johnny <span class="text-indigo-600">Électronique</span></a>
+            
+            <!-- Search bar -->
+            <div class="w-full md:w-1/3 my-4 md:my-0">
+                <input type="text" id="searchInput" placeholder="Rechercher un produit..." class="w-full p-2 pl-4 rounded-full border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+            </div>
+
+            <!-- Navigation buttons -->
+            <nav class="flex items-center space-x-4 relative">
+
+                <!-- Products Menu -->
+                <div class="relative group">
+                    <button class="text-gray-600 hover:text-indigo-600 px-4 py-2 rounded-full font-medium transition-colors focus:outline-none" id="productsMenuBtn">Produits</button>
+                    <div id="productsDropdown" class="absolute hidden top-12 left-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 group-hover:block transition-all duration-300 z-10">
+                        <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Téléphones</a>
+                        <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Ordinateurs</a>
+                        <a href="#" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">Accessoires</a>
+                    </div>
+                </div>
+                
+                <!-- Contact Menu -->
+                <div class="relative">
+                    <button class="text-gray-600 hover:text-indigo-600 px-4 py-2 rounded-full font-medium transition-colors focus:outline-none" id="contactBtn">Contact</button>
+                    <div id="contactMenu" class="absolute hidden top-12 right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 fade-in">
+                        <a href="https://wa.me/237692372579" target="_blank" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                            <span class="font-bold text-green-500">WhatsApp</span>
+                        </a>
+                        <a href="https://www.facebook.com/Johnny.electronique" target="_blank" class="block px-4 py-2 text-gray-800 hover:bg-gray-100">
+                            <span class="font-bold text-blue-600">Facebook</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Shopping Cart Button -->
+                <div class="relative">
+                    <button class="bg-indigo-600 text-white px-6 py-2 rounded-full font-medium flex items-center space-x-2 btn-hover transition-all focus:outline-none" id="cartBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M3 1a1 1 0 000 2h.14c.257 0 .498.11.666.297.168.188.25.43.25.75L4.5 13a1 1 0 001 1h10a1 1 0 001-1l.5-8c0-.32.08-.562.25-.75.168-.187.41-.297.666-.297H17a1 1 0 100-2h-1.666c-.32 0-.562-.08-.75-.25-.187-.168-.297-.41-.297-.666V1zM5.5 13L5 5h10l.5 8H5.5z" clip-rule="evenodd" fill-rule="evenodd"/>
+                        </svg>
+                        <span id="cartCount">0</span>
+                    </button>
+                    <!-- Cart Dropdown Menu -->
+                    <div id="cartMenu" class="absolute hidden top-14 right-0 w-80 bg-white rounded-lg shadow-xl border border-gray-200 p-4 max-h-96 overflow-y-auto fade-in">
+                        <h3 class="text-xl font-semibold mb-4 text-gray-800">Votre Panier</h3>
+                        <div id="cartItemsList" class="space-y-4">
+                            <!-- Cart items will be added here dynamically -->
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                            <div class="flex justify-between items-center mb-4">
+                                <span class="text-lg font-semibold text-gray-700">Total:</span>
+                                <span id="cartTotal" class="text-lg font-bold text-indigo-600">0 FCFA</span>
+                            </div>
+                            <button id="orderBtn" class="bg-green-500 text-white w-full py-3 rounded-full text-lg font-bold btn-hover transition-all focus:outline-none">
+                                Passer la commande via WhatsApp
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content - Product Grid -->
+    <main class="container mx-auto px-4 py-8">
+        <h2 class="text-4xl font-bold text-gray-800 text-center mb-8">Nos Produits Phares</h2>
+        <div id="products-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Product cards will be added here dynamically -->
+        </div>
+    </main>
+
+    <script>
+        // Store product data in a JavaScript array
+        const products = [
+            { id: 1, category: "Téléphones", name: "Smartphone Ultra", description: "Un smartphone avec un écran OLED et un appareil photo haute résolution.", price: 450000, imageUrl: "https://placehold.co/400x400/2563eb/ffffff?text=Smartphone" },
+            { id: 2, category: "Ordinateurs", name: "Ordinateur Portable Pro", description: "Performant et léger, idéal pour les professionnels et les étudiants.", price: 650000, imageUrl: "https://placehold.co/400x400/f59e0b/ffffff?text=PC+Portable" },
+            { id: 3, category: "Accessoires", name: "Casque Bluetooth Pro", description: "Annulation de bruit active pour une immersion totale dans votre musique.", price: 75000, imageUrl: "https://placehold.co/400x400/10b981/ffffff?text=Casque" },
+            { id: 4, category: "Téléphones", name: "Smartwatch Sport", description: "Suivez votre activité physique avec précision et style.", price: 120000, imageUrl: "https://placehold.co/400x400/9b2c2c/ffffff?text=Smartwatch" },
+            { id: 5, category: "Ordinateurs", name: "Souris Ergonomique", description: "Confort et précision pour des heures de travail sans fatigue.", price: 18000, imageUrl: "https://placehold.co/400x400/9333ea/ffffff?text=Souris" },
+            { id: 6, category: "Accessoires", name: "Clavier Mécanique", description: "Expérience de frappe unique et rapide pour le jeu et la programmation.", price: 50000, imageUrl: "https://placehold.co/400x400/3b82f6/ffffff?text=Clavier" },
+            { id: 7, category: "Téléphones", name: "Écouteurs sans fil", description: "Une qualité sonore exceptionnelle dans un format compact et pratique.", price: 65000, imageUrl: "https://placehold.co/400x400/059669/ffffff?text=Ecouteurs" },
+            { id: 8, category: "Ordinateurs", name: "Moniteur 4K", description: "Des images nettes et vibrantes pour le divertissement et la création de contenu.", price: 300000, imageUrl: "https://placehold.co/400x400/d97706/ffffff?text=Moniteur" },
+        ];
+
+        let cartItems = [];
+
+        const cartBtn = document.getElementById('cartBtn');
+        const cartMenu = document.getElementById('cartMenu');
+        const cartCount = document.getElementById('cartCount');
+        const cartItemsList = document.getElementById('cartItemsList');
+        const cartTotalSpan = document.getElementById('cartTotal');
+        const orderBtn = document.getElementById('orderBtn');
+
+        const contactBtn = document.getElementById('contactBtn');
+        const contactMenu = document.getElementById('contactMenu');
+        
+        const searchInput = document.getElementById('searchInput');
+        const productsGrid = document.getElementById('products-grid');
+
+        // Function to render all products on the page
+        function renderProducts(filteredProducts = products) {
+            productsGrid.innerHTML = '';
+            filteredProducts.forEach(product => {
+                const productCard = `
+                    <div class="bg-white rounded-lg shadow-md p-4 flex flex-col items-center text-center transform transition-transform duration-300 hover:scale-105">
+                        <img src="${product.imageUrl}" alt="${product.name}" class="w-full h-48 object-cover rounded-md mb-4 border border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800">${product.name}</h3>
+                        <p class="text-sm text-gray-500 my-2 line-clamp-2">${product.description}</p>
+                        <p class="text-2xl font-bold text-indigo-600 mt-auto">${product.price.toLocaleString('fr-FR')} FCFA</p>
+                        <button class="add-to-cart bg-indigo-600 text-white w-full py-2 rounded-full mt-4 btn-hover transition-all focus:outline-none" data-id="${product.id}">
+                            Ajouter au panier
+                        </button>
+                    </div>
+                `;
+                productsGrid.innerHTML += productCard;
+            });
+            // Add event listeners to newly created buttons
+            addCartEventListeners();
+        }
+
+        // Add event listeners for "Add to Cart" buttons
+        function addCartEventListeners() {
+            document.querySelectorAll('.add-to-cart').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const productId = parseInt(e.target.dataset.id);
+                    const productToAdd = products.find(p => p.id === productId);
+                    if (productToAdd) {
+                        const existingItem = cartItems.find(item => item.id === productId);
+                        if (existingItem) {
+                            existingItem.quantity++;
+                        } else {
+                            cartItems.push({ ...productToAdd, quantity: 1 });
+                        }
+                        updateCartUI();
+                        // Open cart menu on product add
+                        cartMenu.classList.remove('hidden');
+                        cartMenu.classList.add('fade-in');
+                        contactMenu.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
+        // Update cart UI (items, count, total)
+        function updateCartUI() {
+            cartItemsList.innerHTML = '';
+            let total = 0;
+            cartItems.forEach(item => {
+                const cartItemElement = `
+                    <div class="flex items-center space-x-4">
+                        <img src="${item.imageUrl}" alt="${item.name}" class="w-16 h-16 rounded-md object-cover">
+                        <div class="flex-1">
+                            <h4 class="text-sm font-semibold text-gray-800">${item.name}</h4>
+                            <p class="text-xs text-gray-500">${item.quantity} x ${item.price.toLocaleString('fr-FR')} FCFA</p>
+                        </div>
+                        <span class="text-sm font-bold text-indigo-600">${(item.price * item.quantity).toLocaleString('fr-FR')} FCFA</span>
+                    </div>
+                `;
+                cartItemsList.innerHTML += cartItemElement;
+                total += item.price * item.quantity;
+            });
+
+            cartCount.textContent = cartItems.length;
+            cartTotalSpan.textContent = total.toLocaleString('fr-FR') + " FCFA";
+        }
+
+        // Toggle cart menu visibility
+        cartBtn.addEventListener('click', () => {
+            cartMenu.classList.toggle('hidden');
+            cartMenu.classList.contains('hidden') ? cartMenu.classList.remove('fade-in') : cartMenu.classList.add('fade-in');
+            contactMenu.classList.add('hidden'); // Hide contact menu if open
+        });
+
+        // Toggle contact menu visibility
+        contactBtn.addEventListener('click', () => {
+            contactMenu.classList.toggle('hidden');
+            contactMenu.classList.contains('hidden') ? contactMenu.classList.remove('fade-in') : contactMenu.classList.add('fade-in');
+            cartMenu.classList.add('hidden'); // Hide cart menu if open
+        });
+        
+        // Hide menus when clicking outside
+        window.addEventListener('click', (e) => {
+            if (!cartBtn.contains(e.target) && !cartMenu.contains(e.target) && !contactBtn.contains(e.target) && !contactMenu.contains(e.target)) {
+                cartMenu.classList.add('hidden');
+                contactMenu.classList.add('hidden');
+            }
+        });
+        
+        // Order button WhatsApp link
+        orderBtn.addEventListener('click', () => {
+            if (cartItems.length === 0) {
+                alert("Votre panier est vide. Veuillez ajouter des produits avant de passer une commande.");
+                return;
+            }
+            let message = "Bonjour Johnny, je souhaite commander les produits suivants :\n\n";
+            cartItems.forEach(item => {
+                message += `- ${item.name} (${item.quantity} x ${item.price.toLocaleString('fr-FR')} FCFA)\n`;
+            });
+            message += `\nTotal de la commande : ${cartTotalSpan.textContent}`;
+
+            const whatsappUrl = `https://wa.me/237692372579?text=${encodeURIComponent(message)}`;
+            window.open(whatsappUrl, '_blank');
+        });
+
+        // Search functionality
+        searchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredProducts = products.filter(product => {
+                return product.name.toLowerCase().includes(searchTerm) || product.description.toLowerCase().includes(searchTerm);
+            });
+            renderProducts(filteredProducts);
+        });
+
+        // Initial render of products on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            updateCartUI();
+        });
+    </script>
+
+</body>
+</html>
