@@ -52,122 +52,108 @@
                 auth = getAuth(app);
                 if (initialAuthToken) {
                     await signInWithCustomToken(auth, initialAuthToken);
+                    console.log("Firebase initialized and user authenticated.");
+                    
+                    // All database-related functions are now called from here
+                    // This ensures the database is ready before any operation
+                    const productForm = document.getElementById('productForm');
+                    const submitBtn = document.getElementById('submitBtn');
+                    const logoForm = document.getElementById('logoForm');
+                    const logoSubmitBtn = document.getElementById('logoSubmitBtn');
+
+                    // Function to update site settings (logo) in Firestore
+                    const updateSettings = async (settingsData) => {
+                        const userId = auth.currentUser?.uid;
+                        if (!userId) {
+                            alert("Utilisateur non authentifié.");
+                            return;
+                        }
+                        const docRef = doc(db, `artifacts/${appId}/users/${userId}/settings/site_settings`);
+                        await setDoc(docRef, settingsData, { merge: true });
+                        alert("Paramètres du site mis à jour avec succès !");
+                    };
+
+                    // Function to add a product to Firestore
+                    const addProductToDB = async (productData) => {
+                        const userId = auth.currentUser?.uid;
+                        if (!userId) {
+                            alert("Utilisateur non authentifié.");
+                            return;
+                        }
+                        const collectionPath = `artifacts/${appId}/users/${userId}/products`;
+                        await addDoc(collection(db, collectionPath), productData);
+                        alert("Produit ajouté avec succès !");
+                    };
+
+                    // Product form submission
+                    productForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+                        
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+                        const name = document.getElementById('productName').value;
+                        const category = document.getElementById('productCategory').value;
+                        const price = parseInt(document.getElementById('productPrice').value);
+                        const description = document.getElementById('productDescription').value;
+                        const imageUrl = document.getElementById('productImageURL').value;
+
+                        if (!name || !category || isNaN(price) || !description || !imageUrl) {
+                            alert("Veuillez remplir tous les champs et fournir une URL d'image.");
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = 'Ajouter le produit';
+                            return;
+                        }
+                        
+                        const newProduct = {
+                            name,
+                            category,
+                            price,
+                            description,
+                            imageUrl,
+                            createdAt: Date.now()
+                        };
+                        
+                        await addProductToDB(newProduct);
+                        
+                        productForm.reset();
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Ajouter le produit';
+                    });
+
+                    // Logo form submission
+                    logoForm.addEventListener('submit', async (e) => {
+                        e.preventDefault();
+
+                        logoSubmitBtn.disabled = true;
+                        logoSubmitBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+                        const logoUrl = document.getElementById('logoUrl').value;
+                        if (!logoUrl) {
+                            alert("Veuillez fournir une URL d'image pour le logo.");
+                            logoSubmitBtn.disabled = false;
+                            logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
+                            return;
+                        }
+
+                        await updateSettings({ logoUrl });
+
+                        logoForm.reset();
+                        logoSubmitBtn.disabled = false;
+                        logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
+                    });
+
+                } else {
+                    console.error("Authentication token not found.");
+                    alert("Erreur d'authentification. L'application ne peut pas se connecter à la base de données.");
                 }
-                console.log("Firebase initialized and user authenticated.");
             } catch (error) {
                 console.error("Error initializing Firebase or signing in:", error);
                 alert("Erreur de connexion à la base de données. Veuillez réessayer.");
             }
         }
 
-        // Function to update site settings (logo) in Firestore
-        async function updateSettings(settingsData) {
-            if (!db) {
-                alert("La base de données n'est pas initialisée.");
-                return;
-            }
-            try {
-                const userId = auth.currentUser?.uid;
-                if (!userId) {
-                    alert("Utilisateur non authentifié.");
-                    return;
-                }
-                const docRef = doc(db, `artifacts/${appId}/users/${userId}/settings/site_settings`);
-                await setDoc(docRef, settingsData, { merge: true });
-                alert("Paramètres du site mis à jour avec succès !");
-            } catch (e) {
-                console.error("Error updating settings: ", e);
-                alert("Erreur lors de la mise à jour des paramètres.");
-            }
-        }
-
-        // Function to add a product to Firestore
-        async function addProductToDB(productData) {
-            if (!db) {
-                alert("La base de données n'est pas initialisée.");
-                return;
-            }
-            try {
-                const userId = auth.currentUser?.uid;
-                if (!userId) {
-                    alert("Utilisateur non authentifié.");
-                    return;
-                }
-                const collectionPath = `artifacts/${appId}/users/${userId}/products`;
-                await addDoc(collection(db, collectionPath), productData);
-                alert("Produit ajouté avec succès !");
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                alert("Erreur lors de l'ajout du produit.");
-            }
-        }
-
-        // Event listener for form submission
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeFirebase();
-            const productForm = document.getElementById('productForm');
-            const submitBtn = document.getElementById('submitBtn');
-            const logoForm = document.getElementById('logoForm');
-            const logoSubmitBtn = document.getElementById('logoSubmitBtn');
-
-            // Product form submission
-            productForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<div class="spinner mx-auto"></div>';
-
-                const name = document.getElementById('productName').value;
-                const category = document.getElementById('productCategory').value;
-                const price = parseInt(document.getElementById('productPrice').value);
-                const description = document.getElementById('productDescription').value;
-                const imageUrl = document.getElementById('productImageURL').value;
-
-                if (!name || !category || isNaN(price) || !description || !imageUrl) {
-                    alert("Veuillez remplir tous les champs et fournir une URL d'image.");
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Ajouter le produit';
-                    return;
-                }
-                
-                const newProduct = {
-                    name,
-                    category,
-                    price,
-                    description,
-                    imageUrl,
-                    createdAt: Date.now()
-                };
-                
-                await addProductToDB(newProduct);
-                
-                productForm.reset();
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = 'Ajouter le produit';
-            });
-
-            // Logo form submission
-            logoForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-
-                logoSubmitBtn.disabled = true;
-                logoSubmitBtn.innerHTML = '<div class="spinner mx-auto"></div>';
-
-                const logoUrl = document.getElementById('logoUrl').value;
-                if (!logoUrl) {
-                    alert("Veuillez fournir une URL d'image pour le logo.");
-                    logoSubmitBtn.disabled = false;
-                    logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
-                    return;
-                }
-
-                await updateSettings({ logoUrl });
-
-                logoForm.reset();
-                logoSubmitBtn.disabled = false;
-                logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
-            });
-        });
+        document.addEventListener('DOMContentLoaded', initializeFirebase);
     </script>
 
     <!-- Main Content - Product Form -->
@@ -224,4 +210,3 @@
     </div>
 </body>
 </html>
-
