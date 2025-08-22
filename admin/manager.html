@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter un produit - Johnny Électronique</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        .btn-hover:hover {
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            transform: translateY(-2px);
+        }
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+
+    <!-- Firebase Imports -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, setDoc, doc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // Global variables provided by the environment
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, storage;
+
+        // Function to initialize Firebase and authenticate
+        async function initializeFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                storage = getStorage(app); // Initialize Firebase Storage
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                }
+                console.log("Firebase initialized and user authenticated.");
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+                alert("Erreur de connexion à la base de données. Veuillez réessayer.");
+            }
+        }
+
+        // Function to update site settings (logo) in Firestore
+        async function updateSettings(settingsData) {
+            if (!db) {
+                alert("La base de données n'est pas initialisée.");
+                return;
+            }
+            try {
+                const userId = auth.currentUser?.uid;
+                if (!userId) {
+                    alert("Utilisateur non authentifié.");
+                    return;
+                }
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/settings/site_settings`);
+                await setDoc(docRef, settingsData, { merge: true });
+                alert("Paramètres du site mis à jour avec succès !");
+            } catch (e) {
+                console.error("Error updating settings: ", e);
+                alert("Erreur lors de la mise à jour des paramètres.");
+            }
+        }
+
+        // Function to add a product to Firestore
+        async function addProductToDB(productData) {
+            if (!db) {
+                alert("La base de données n'est pas initialisée.");
+                return;
+            }
+            try {
+                const userId = auth.currentUser?.uid;
+                if (!userId) {
+                    alert("Utilisateur non authentifié.");
+                    return;
+                }
+                const collectionPath = `artifacts/${appId}/users/${userId}/products`;
+                await addDoc(collection(db, collectionPath), productData);
+                alert("Produit ajouté avec succès !");
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                alert("Erreur lors de l'ajout du produit.");
+            }
+        }
+
+        // Event listener for form submission
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeFirebase();
+            const productForm = document.getElementById('productForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const logoForm = document.getElementById('logoForm');
+            const logoSubmitBtn = document.getElementById('logoSubmitBtn');
+
+            // Product form submission
+            productForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+                const name = document.getElementById('productName').value;
+                const category = document.getElementById('productCategory').value;
+                const price = parseInt(document.getElementById('productPrice').value);
+                const description = document.getElementById('productDescription').value;
+                const imageFile = document.getElementById('productImage').files[0];
+
+                if (!name || !category || isNaN(price) || !description || !imageFile) {
+                    alert("Veuillez remplir tous les champs et sélectionner une image.");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Ajouter le produit';
+                    return;
+                }
+                
+                let imageUrl = '';
+                try {
+                    const userId = auth.currentUser?.uid;
+                    const storageRef = ref(storage, `images/${userId}/${Date.now()}-${imageFile.name}`);
+                    const snapshot = await uploadBytes(storageRef, imageFile);
+                    imageUrl = await getDownloadURL(snapshot.ref);
+                } catch (e) {
+                    console.error("Error uploading image:", e);
+                    alert("Erreur lors de l'envoi de l'image.");
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Ajouter le produit';
+                    return;
+                }
+
+                const newProduct = {
+                    name,
+                    category,
+                    price,
+                    description,
+                    imageUrl,
+                    createdAt: Date.now()
+                };
+                
+                await addProductToDB(newProduct);
+                
+                productForm.reset();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Ajouter le produit';
+            });
+
+            // Logo form submission
+            logoForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                logoSubmitBtn.disabled = true;
+                logoSubmitBtn.innerHTML = '<div class="spinner mx-auto"></div>';
+
+                const logoFile = document.getElementById('logoFile').files[0];
+                if (!logoFile) {
+                    alert("Veuillez sélectionner un fichier d'image pour le logo.");
+                    logoSubmitBtn.disabled = false;
+                    logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
+                    return;
+                }
+
+                let logoUrl = '';
+                try {
+                    const userId = auth.currentUser?.uid;
+                    const storageRef = ref(storage, `logos/${userId}/${Date.now()}-${logoFile.name}`);
+                    const snapshot = await uploadBytes(storageRef, logoFile);
+                    logoUrl = await getDownloadURL(snapshot.ref);
+                } catch (e) {
+                    console.error("Error uploading logo:", e);
+                    alert("Erreur lors de l'envoi du logo.");
+                    logoSubmitBtn.disabled = false;
+                    logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
+                    return;
+                }
+
+                await updateSettings({ logoUrl });
+
+                logoForm.reset();
+                logoSubmitBtn.disabled = false;
+                logoSubmitBtn.innerHTML = 'Mettre à jour le logo';
+            });
+        });
+    </script>
+
+    <!-- Main Content - Product Form -->
+    <div class="max-w-xl mx-auto bg-white rounded-lg shadow-xl p-8 mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Ajouter un nouveau produit</h1>
+        <form id="productForm" class="space-y-6">
+            <div>
+                <label for="productName" class="block text-gray-700 font-medium mb-1">Nom du produit</label>
+                <input type="text" id="productName" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label for="productCategory" class="block text-gray-700 font-medium mb-1">Catégorie</label>
+                <select id="productCategory" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="" disabled selected>Sélectionner une catégorie</option>
+                    <option value="Téléphones">Téléphones</option>
+                    <option value="Ordinateurs">Ordinateurs</option>
+                    <option value="Accessoires">Accessoires</option>
+                </select>
+            </div>
+            <div>
+                <label for="productDescription" class="block text-gray-700 font-medium mb-1">Description</label>
+                <textarea id="productDescription" rows="4" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+            <div>
+                <label for="productPrice" class="block text-gray-700 font-medium mb-1">Prix (FCFA)</label>
+                <input type="number" id="productPrice" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label for="productImage" class="block text-gray-700 font-medium mb-1">Photo du produit</label>
+                <input type="file" id="productImage" accept="image/*" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-full hover:bg-indigo-700 transition-colors duration-300 btn-hover">
+                    Ajouter le produit
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Main Content - Logo Form -->
+    <div class="max-w-xl mx-auto bg-white rounded-lg shadow-xl p-8">
+        <h1 class="text-3xl font-bold text-gray-800 text-center mb-6">Mettre à jour le logo du site</h1>
+        <form id="logoForm" class="space-y-6">
+            <div>
+                <label for="logoFile" class="block text-gray-700 font-medium mb-1">Sélectionner une image pour le logo</label>
+                <input type="file" id="logoFile" accept="image/*" required class="w-full p-3 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <button type="submit" id="logoSubmitBtn" class="w-full bg-indigo-600 text-white font-semibold py-3 rounded-full hover:bg-indigo-700 transition-colors duration-300 btn-hover">
+                    Mettre à jour le logo
+                </button>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
